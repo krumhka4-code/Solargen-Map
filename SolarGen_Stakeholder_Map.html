@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SolarGen Stakeholder & Influence Map — LEDR 6932 Final Project</title>
+<style>
+  :root {
+    --bg: #f7f8fb;
+    --surface: #ffffff;
+    --surface-2: #f1f3f8;
+    --ink: #1f2937;
+    --ink-soft: #4b5563;
+    --ink-muted: #6b7280;
+    --border: #e5e7eb;
+    --ally: #16a34a;
+    --ally-soft: #dcfce7;
+    --tension: #dc2626;
+    --tension-soft: #fee2e2;
+    --mixed: #d97706;
+    --mixed-soft: #fef3c7;
+    --helios: #f59e0b;
+    --shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  header.hero {
+    padding: 28px 40px 20px;
+    background: linear-gradient(135deg, #fff8e1 0%, #ffffff 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -0.02em; }
+  header .sub { color: var(--ink-soft); font-size: 14px; max-width: 900px; }
+  header .meta { color: var(--ink-muted); font-size: 12px; margin-top: 8px; }
+
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    padding: 20px 40px 60px;
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .toolbar .label {
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 4px;
+  }
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn.active {
+    background: #1f2937;
+    color: white;
+    border-color: #1f2937;
+  }
+
+  svg.map { width: 100%; height: 720px; display: block; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 22px; height: 3px; border-radius: 2px; }
+  .swatch.ally { background: var(--ally); }
+  .swatch.tension { background: var(--tension); }
+  .swatch.mixed { background: var(--mixed); }
+  .swatch.thick { height: 5px; }
+  .swatch.dashed { background: repeating-linear-gradient(90deg, var(--ink-muted) 0 4px, transparent 4px 8px); height: 2px; }
+  .swatch-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); }
+
+  /* SVG node styling */
+  .node { cursor: pointer; transition: opacity 0.2s ease; }
+  .node circle { stroke: white; stroke-width: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+  .node text { pointer-events: none; font-size: 12px; font-weight: 600; fill: var(--ink); }
+  .node .role { font-size: 10px; font-weight: 500; fill: var(--ink-muted); }
+  .node.dim { opacity: 0.18; }
+  .link { stroke-opacity: 0.65; transition: stroke-opacity 0.2s ease; }
+  .link.dim { stroke-opacity: 0.05; }
+  .link.highlight { stroke-opacity: 1; stroke-width: 3.5; }
+  .center-node rect { fill: #fff7ed; stroke: var(--helios); stroke-width: 2; stroke-dasharray: 4 3; }
+  .center-node text { font-weight: 700; fill: #b45309; }
+  .goe-node rect { fill: #fef2f2; stroke: #dc2626; stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .goe-node text { fill: #991b1b; font-weight: 600; }
+
+  /* Detail panel */
+  .detail h3 { margin: 0 0 4px; font-size: 17px; }
+  .detail .role-line { color: var(--ink-muted); font-size: 13px; margin-bottom: 10px; }
+  .detail .style-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: white;
+  }
+  .detail .section { margin-top: 12px; font-size: 13px; }
+  .detail .section h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin: 12px 0 4px;
+  }
+  .detail .rel-list { list-style: none; padding: 0; margin: 0; }
+  .detail .rel-list li { padding: 5px 8px; border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+  .detail .rel-list li.ally { background: var(--ally-soft); border-left: 3px solid var(--ally); }
+  .detail .rel-list li.tension { background: var(--tension-soft); border-left: 3px solid var(--tension); }
+  .detail .rel-list li.mixed { background: var(--mixed-soft); border-left: 3px solid var(--mixed); }
+  .detail .rel-list strong { font-weight: 600; }
+  .detail .influence-tip {
+    background: #fffbeb;
+    border-left: 3px solid var(--helios);
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-style: italic;
+    color: #78350f;
+    margin-top: 6px;
+  }
+
+  /* Bottom sections */
+  .bottom-grid {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 40px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .section-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin: 0 0 10px;
+    font-weight: 700;
+  }
+  .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .product-card {
+    padding: 10px 12px;
+    border-left: 4px solid var(--helios);
+    background: var(--surface-2);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .product-card .p-name { font-weight: 700; }
+  .product-card .p-owner { color: var(--ink-muted); font-size: 12px; }
+  .product-card .p-stage {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    background: #dbeafe;
+    color: #1e40af;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+
+  .externals {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .ext-card {
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border-radius: 6px;
+    font-size: 12px;
+    border-left: 4px solid #6366f1;
+  }
+  .ext-card.pressure { border-left-color: var(--tension); }
+  .ext-card.ally-external { border-left-color: var(--ally); }
+  .ext-card .ext-name { font-weight: 700; font-size: 13px; }
+  .ext-card .ext-desc { color: var(--ink-soft); margin-top: 2px; }
+
+  .influence-strip {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+  }
+  .influence-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .influence-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .influence-card .target { font-weight: 700; font-size: 13px; }
+  .influence-card .route { color: var(--ink-soft); font-size: 12px; margin-top: 4px; }
+  .influence-card .via { color: var(--ally); font-weight: 600; }
+  .influence-card .avoid { color: var(--tension); font-weight: 600; }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--ink-muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 1100px) {
+    .container { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>SolarGen Stakeholder & Influence Map</h1>
+  <div class="sub">
+    A full-system view of the decision dynamics around the Helios Home launch. Each inner-circle node is a member of the SolarGen Executive Leadership Team — connected by their documented alliances, tensions, and mixed relationships. External forces press on the system from the outside. Click any node to see their decision style, full relationship profile, and influence-pathway tips.
+  </div>
+  <div class="meta">LEDR 6932 701 — Final Project: SolarGen Decision-Making · Built from Company Profile + Briefings #1–#3</div>
+</header>
+
+<div class="container">
+
+  <!-- MAIN MAP -->
+  <div class="panel">
+    <div class="toolbar">
+      <span class="label">View:</span>
+      <button class="btn active" data-filter="all">All relationships</button>
+      <button class="btn" data-filter="ally">Alliances only</button>
+      <button class="btn" data-filter="tension">Tensions only</button>
+      <button class="btn" data-filter="mixed">Mixed / guarded</button>
+      <button class="btn" data-filter="helios">Helios decision ring</button>
+      <span class="label" style="margin-left:12px;">Group by:</span>
+      <button class="btn" data-group="function">Function</button>
+      <button class="btn" data-group="region">Region</button>
+      <button class="btn active" data-group="none">None</button>
+    </div>
+
+    <svg class="map" viewBox="0 0 900 720" id="mapSvg"></svg>
+
+    <div class="legend">
+      <span class="legend-item"><span class="swatch ally"></span> Trust / Alliance</span>
+      <span class="legend-item"><span class="swatch ally thick"></span> Strong alliance</span>
+      <span class="legend-item"><span class="swatch tension"></span> Friction / Tension</span>
+      <span class="legend-item"><span class="swatch tension thick"></span> Strong tension</span>
+      <span class="legend-item"><span class="swatch mixed"></span> Mixed / guarded</span>
+      <span class="legend-item"><span class="swatch dashed"></span> Mediates / bridges</span>
+      <span class="legend-item" style="margin-left:auto;color:var(--ink-muted);font-style:italic;">Node color = decision-making style</span>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="panel detail" id="detailPanel">
+    <h3 id="dName">Click a node to see details</h3>
+    <div class="role-line" id="dRole">SolarGen has 11 executives involved in the Helios decision, orbited by external pressure points. Tap anyone on the map.</div>
+    <div id="dBody" style="display:none;">
+      <span class="style-tag" id="dStyleTag">Style</span>
+      <div class="section">
+        <h4>Profile</h4>
+        <div id="dProfile"></div>
+      </div>
+      <div class="section">
+        <h4>Key relationships</h4>
+        <ul class="rel-list" id="dRels"></ul>
+      </div>
+      <div class="section">
+        <h4>Influence tip</h4>
+        <div class="influence-tip" id="dInfluence"></div>
+      </div>
+      <div class="section" id="dProductsWrap" style="display:none;">
+        <h4>Owns / Champions</h4>
+        <div id="dProducts" style="font-size:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM SECTIONS -->
+<div class="bottom-grid">
+  <div class="panel">
+    <div class="section-title">Product Pipeline — Who Owns What</div>
+    <div class="products-grid">
+      <div class="product-card">
+        <div><span class="p-name">Helios Home</span><span class="p-stage">Beta</span></div>
+        <div class="p-owner">Sofia Lund (CTO) · The decision at the center of this map</div>
+      </div>
+      <div class="product-card">
+        <div><span class="p-name">SolarFarm AI+</span><span class="p-stage">Concept</span></div>
+        <div class="p-owner">David Greene (CFO) · Budget paused pending ROI proof</div>
+      </div>
+      <div class="product-card">
+        <div><span class="p-name">ConnectEdge</span><span class="p-stage">Pilot</span></div>
+        <div class="p-owner">Rachel Kim (CCO) · Solar + EV charging integration</div>
+      </div>
+      <div class="product-card">
+        <div><span class="p-name">SolarSphere Pro</span><span class="p-stage">Rescope</span></div>
+        <div class="p-owner">Marcus Lin (COO) · Integration challenges from 2022 acquisition</div>
+      </div>
+      <div class="product-card">
+        <div><span class="p-name">SunSync Dashboard</span><span class="p-stage">Dev</span></div>
+        <div class="p-owner">Sofia Lund (CTO) · Users overwhelmed by complexity</div>
+      </div>
+      <div class="product-card" style="border-left-color:#a855f7;">
+        <div><span class="p-name">Horizon X</span><span class="p-stage" style="background:#ede9fe;color:#6d28d9;">R&amp;D</span></div>
+        <div class="p-owner">Rumored Elena Ruiz passion project · Status unclear</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">External Forces — Pressing on the System</div>
+    <div class="externals">
+      <div class="ext-card pressure">
+        <div class="ext-name">Board of Directors</div>
+        <div class="ext-desc">Pushing for visible "One SolarGen" progress and Helios momentum. Quarterly update pressure on Elena.</div>
+      </div>
+      <div class="ext-card pressure">
+        <div class="ext-name">Wall Street / Activist Investors</div>
+        <div class="ext-desc">Share price flat at ~$20 since 2022. "Whispers of activist interest." Wants 6–8% revenue growth without margin erosion.</div>
+      </div>
+      <div class="ext-card pressure">
+        <div class="ext-name">HelioNova / HelioEuro (Competitor)</div>
+        <div class="ext-desc">Hiring fast in Chicago and Madrid. Patents look "Helios-adjacent." Poached a mid-level R&amp;D lead in Madrid.</div>
+      </div>
+      <div class="ext-card pressure">
+        <div class="ext-name">Brilliance Solar (Competitor)</div>
+        <div class="ext-desc">Silicon Valley startup with modular home kits and influencer buzz. Already surprised SolarGen on grid-AI.</div>
+      </div>
+      <div class="ext-card">
+        <div class="ext-name">Customers (VOC, 90 pages)</div>
+        <div class="ext-desc">"Three SolarGens" experience. Owner: Peter Van der Meer. Review deferred 5×.</div>
+      </div>
+      <div class="ext-card">
+        <div class="ext-name">Employees (Engagement Survey)</div>
+        <div class="ext-desc">82% mission pride, but only 29% say functions work well together. NPS 46 vs 65 target. Change fatigue.</div>
+      </div>
+      <div class="ext-card">
+        <div class="ext-name">Regulators (US + Germany)</div>
+        <div class="ext-desc">Certification pending in US &amp; Germany — "pilot jurisdictions may be months out." ESG disclosure scrutiny rising.</div>
+      </div>
+      <div class="ext-card ally-external">
+        <div class="ext-name">OEM Partners (Spain + Midwest)</div>
+        <div class="ext-desc">Rachel's OEM contact in Spain tipped her off to HelioNova activity. Laura's Midwest partners echoing signals.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INFLUENCE PATHWAYS -->
+<div class="influence-strip">
+  <div class="panel">
+    <div class="section-title">Influence Pathways — For the Influence Strategy Planner</div>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px;">If you need to influence a specific leader, who's the best route in — and who should you avoid making your primary messenger?</div>
+    <div class="influence-grid">
+      <div class="influence-card">
+        <div class="target">→ Elena Ruiz (CEO)</div>
+        <div class="route">Go through <span class="via">Marcus</span> (her consigliere) or <span class="via">Helena</span> (culture argument). Frame as consensus, not confrontation.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Marcus Lin (COO)</div>
+        <div class="route">Go through <span class="via">David or Frederic</span>. Lead with process, risk mitigation, and integration logic. Avoid rushing him.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Rachel Kim (CCO)</div>
+        <div class="route">Partner with <span class="via">Sofia or Peter</span> (her vision trio). Frame as market momentum and first-mover. Avoid <span class="avoid">David</span> as messenger.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ David Greene (CFO)</div>
+        <div class="route">Route through <span class="via">Marcus or Frederic</span>. Bring directional ROI numbers, even if rough. Avoid <span class="avoid">Sofia/Rachel</span> as messengers.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Sofia Lund (CTO)</div>
+        <div class="route">Go through <span class="via">Rachel or Peter</span>. Speak to speed, innovation, and cutting bureaucracy. Avoid <span class="avoid">Frederic/Marcus</span> as primary messenger.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Frederic Moreau (Legal)</div>
+        <div class="route">Partner with <span class="via">David or Dianne</span>. Bring risk-framed, detail-rich case. Expect him to press pause before "go."</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Helena Tran (CHRO)</div>
+        <div class="route">Bring <span class="via">Marcus</span> along. She's regularly talked over in ELT — give her air cover to speak on readiness.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Peter Van der Meer</div>
+        <div class="route">Anchor in long-term ESG narrative and investor story. <span class="via">Rachel, Sofia, Helena</span> are natural allies.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Laura Esposito (NA)</div>
+        <div class="route">Route through <span class="via">David</span> (fiscal discipline). Frame as speed-to-market. Avoid making it sound "global first."</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Anil Kumar (APAC)</div>
+        <div class="route">Go through <span class="via">Marcus or Frederic</span>. Emphasize phased, region-first, regulator-friendly rollout.</div>
+      </div>
+      <div class="influence-card">
+        <div class="target">→ Dianne Blanco (EMEA)</div>
+        <div class="route">Partner with <span class="via">Frederic</span>. Acknowledge EMEA regulatory reality — she's the natural bridge between NA and APAC.</div>
+      </div>
+      <div class="influence-card" style="background:#fff7ed;border-color:#fdba74;">
+        <div class="target">⚠ The GOE Role (unfilled)</div>
+        <div class="route">The "Global Operational Excellence" linchpin role is stalled because <strong>no two execs define it the same way</strong>. Until clarified, influence here routes through <span class="via">Helena + Elena</span>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Karl Krumhka · LEDR 6932 701 Spring 2026 · Built as a working document for the Influence Strategy Planner + Final Team Recommendation on Helios.
+</footer>
+
+<script>
+// ===== DATA =====
+const people = [
+  {
+    id: 'elena', name: 'Elena Ruiz', title: 'CEO', tenure: '2 yrs',
+    function: 'Executive', region: 'Global',
+    style: 'Conflict-averse Harmonizer', styleColor: '#60a5fa',
+    profile: 'Prefers alignment and consensus; avoids direct confrontation. Reaches frustration point in Helios discussions. Board is pressuring her for visible momentum on "One SolarGen" transformation.',
+    influence: 'Frame requests as consensus, not confrontation. Her instinct is to stall when conflict rises — give her a pre-aligned recommendation she can endorse, not arbitrate.',
+    products: ['Horizon X (rumored personal project)']
+  },
+  {
+    id: 'marcus', name: 'Marcus Lin', title: 'COO', tenure: '4 yrs',
+    function: 'Operations', region: 'Global',
+    style: 'Pragmatic Integrator', styleColor: '#14b8a6',
+    profile: 'Calm, observant, process-driven. Functions as Elena\'s unofficial consigliere. Sponsor of the unfilled Global Operational Excellence role. Often mediates the Rachel vs. David conflict.',
+    influence: 'Single biggest multiplier in the room. Almost any influence path to Elena runs through him. Lead with integration logic, risk, and sequencing — not speed.',
+    products: ['SolarSphere Pro (rescope)']
+  },
+  {
+    id: 'rachel', name: 'Rachel Kim', title: 'CCO', tenure: '6 yrs',
+    function: 'Commercial', region: 'Global',
+    style: 'Momentum-builder', styleColor: '#f97316',
+    profile: 'Dynamic, persuasive, loves big bets and bold launches. Anchor of the "big vision trio" (with Sofia and Peter). Pushing hardest for Helios launch momentum and ESG-aligned storytelling.',
+    influence: 'Respond to first-mover market arguments and competitive urgency (e.g., HelioNova). Do not send David-style skeptics as messengers — pair her with Peter or Sofia.',
+    products: ['ConnectEdge (pilot)']
+  },
+  {
+    id: 'david', name: 'David Greene', title: 'CFO', tenure: '8 yrs',
+    function: 'Finance', region: 'Global',
+    style: 'Analytical Skeptic', styleColor: '#475569',
+    profile: 'Needs evidence and clear cost/margin models. Slow to greenlight without data. Gatekeeper on Helios business case. Identifies $100M efficiency targets and pushes IT rationalization.',
+    influence: 'Bring directional ROI, even rough. Expect him to ask about capex/opex and post-sale margins. Marcus and Frederic are his trust circle — route through them.',
+    products: ['SolarFarm AI+ (paused)']
+  },
+  {
+    id: 'sofia', name: 'Sofia Lund', title: 'CTO', tenure: '10 yrs',
+    function: 'Technology', region: 'Global',
+    style: 'Innovation Purist', styleColor: '#a855f7',
+    profile: 'Impatient with bureaucracy; deeply invested in Helios ("14 months in beta — it\'s ready, it works"). Tense with Marcus (structure slows tech) and low patience for David.',
+    influence: 'Speak to speed, technical craft, and cutting red tape. Acknowledge her authorship of Helios. Do not lead with compliance or finance framing.',
+    products: ['Helios Home (Beta)', 'SunSync Dashboard (Dev)']
+  },
+  {
+    id: 'frederic', name: 'Frederic Moreau', title: 'Chief Legal & Regulatory', tenure: '6 yrs',
+    function: 'Legal', region: 'Global',
+    style: 'Cautious Risk-aware', styleColor: '#eab308',
+    profile: 'Detail-driven; raises compliance red flags early. Seen as "the brakes" by Sofia and Rachel. Warned Helios certification is still pending in US and Germany.',
+    influence: 'Bring a risk-framed, evidence-based case. He will slow anything without IP review or regulatory clarity. Pair with David for credibility.',
+    products: []
+  },
+  {
+    id: 'helena', name: 'Helena Tran', title: 'CHRO', tenure: '3 yrs',
+    function: 'HR', region: 'Global',
+    style: 'People-first Pragmatist', styleColor: '#ec4899',
+    profile: 'Flags readiness issues early — and is regularly talked over in exec meetings. Owns employee engagement, executive interviews, and change management for the GOE role.',
+    influence: 'Give her air cover. She\'s one of the few trusted by Elena for culture insight but gets eclipsed by Rachel. Pair her with Marcus to be heard.',
+    products: []
+  },
+  {
+    id: 'peter', name: 'Peter Van der Meer', title: 'VP Investor & Government Affairs', tenure: '7 yrs',
+    function: 'Investor/Gov', region: 'Global',
+    style: 'Purpose-driven Visionary', styleColor: '#6366f1',
+    profile: 'Advocates long-term ESG-positioning over speed. Owner of the VOC study (deferred 5×). Part of the "big vision trio" with Rachel and Sofia.',
+    influence: 'Anchor in long-term narrative, ESG, and investor story. Quietly tense with David (values vs. financial rigor) — don\'t pair them as messengers.',
+    products: []
+  },
+  {
+    id: 'laura', name: 'Laura Esposito', title: 'President, North America', tenure: '4 yrs',
+    function: 'Regional', region: 'North America',
+    style: 'Market-timing Strategist', styleColor: '#f43f5e',
+    profile: 'Urgent, externally focused. Wants aggressive U.S.-first Helios rollout ("we finally have tailwinds"). Friction with Anil over regional priorities; tactical ally to David on fiscal discipline.',
+    influence: 'Frame as market timing and competitive window. Do not pitch global-first or standardization — she fears a 20% revenue drop from centralization.',
+    products: []
+  },
+  {
+    id: 'anil', name: 'Anil Kumar', title: 'President, APAC', tenure: '6 yrs',
+    function: 'Regional', region: 'APAC',
+    style: 'Operational Realist', styleColor: '#78350f',
+    profile: 'Prefers cautious, region-first pilots. Recommended a phased APAC-first Helios launch. Butts heads with Laura. Trusted by Marcus and Frederic.',
+    influence: 'Emphasize phased rollout, regulatory pragmatism, customer proximity. He worries centralized roles undermine regional accountability.',
+    products: []
+  },
+  {
+    id: 'dianne', name: 'Dianne Blanco', title: 'President, EMEA', tenure: '6 yrs',
+    function: 'Regional', region: 'EMEA',
+    style: 'Strategic Bridge-builder', styleColor: '#16a34a',
+    profile: 'Polished and diplomatic; pushes firmly when regional needs are ignored. Trusted collaborator to Frederic on EMEA regulatory complexity. Mediates Laura–Anil tension. (Absent from recent ELT.)',
+    influence: 'Natural bridge. If you need NA + APAC + EMEA alignment, her endorsement is high leverage. Pair with Frederic for regulatory credibility.',
+    products: []
+  }
+];
+
+// Relationships — type: ally|tension|mixed, strength: normal|strong, bridges: true if "mediates"
+const rels = [
+  { a:'elena', b:'marcus', type:'ally', strength:'strong', note:'Elena relies heavily on Marcus — he is her consigliere.' },
+  { a:'elena', b:'rachel', type:'mixed', note:'Trusts her instincts but worries she gets ahead.' },
+  { a:'elena', b:'sofia', type:'tension', note:'Uneasy with Sofia\'s intensity.' },
+  { a:'elena', b:'david', type:'mixed', note:'Respects rigor, feels slowed by him. He feels she avoids tough calls.' },
+  { a:'elena', b:'helena', type:'ally', note:'Trusts Helena for culture insight.' },
+  { a:'elena', b:'peter', type:'ally', note:'Peter seen as earnest and trustworthy.' },
+  { a:'elena', b:'frederic', type:'mixed', note:'Neutral.' },
+
+  { a:'marcus', b:'david', type:'ally', strength:'strong', note:'High trust. David often aligns with Marcus.' },
+  { a:'marcus', b:'frederic', type:'ally', note:'Mutual respect.' },
+  { a:'marcus', b:'helena', type:'ally', note:'Good rapport.' },
+  { a:'marcus', b:'anil', type:'ally', note:'Anil respects Marcus.' },
+  { a:'marcus', b:'sofia', type:'tension', note:'Speed vs. structure. Sofia feels structure slows tech.' },
+  { a:'marcus', b:'rachel', type:'mixed', bridges:true, note:'Marcus often mediates Rachel–David tension.' },
+
+  { a:'rachel', b:'sofia', type:'ally', strength:'strong', note:'"Big vision trio" — strongest internal alliance.' },
+  { a:'rachel', b:'peter', type:'ally', strength:'strong', note:'"Big vision trio" — ESG-aligned launches.' },
+  { a:'rachel', b:'david', type:'tension', strength:'strong', note:'Too fast, too loose, not enough numbers.' },
+  { a:'rachel', b:'laura', type:'mixed', note:'Politely competitive — regional vs. global priorities.' },
+  { a:'rachel', b:'helena', type:'tension', note:'Brand before readiness; Helena feels talked over.' },
+  { a:'rachel', b:'dianne', type:'tension', note:'Constructive — Rachel moves faster than EMEA readiness.' },
+  { a:'rachel', b:'anil', type:'mixed', note:'Minimal relationship — commercial vs. ops divide.' },
+  { a:'rachel', b:'frederic', type:'tension', note:'Frederic seen as "the brakes."' },
+
+  { a:'sofia', b:'peter', type:'ally', note:'Mutual respect on vision.' },
+  { a:'sofia', b:'david', type:'tension', strength:'strong', note:'Data vs. speed — core philosophical clash.' },
+  { a:'sofia', b:'frederic', type:'tension', note:'Compliance vs. iteration.' },
+
+  { a:'david', b:'frederic', type:'ally', strength:'strong', note:'High trust — the "data + compliance" backbone.' },
+  { a:'david', b:'laura', type:'ally', note:'Tactical alignment on fiscal discipline.' },
+  { a:'david', b:'peter', type:'tension', note:'Quiet tension — values vs. financial rigor.' },
+
+  { a:'frederic', b:'dianne', type:'ally', strength:'strong', note:'EMEA regulatory collaborator.' },
+  { a:'frederic', b:'anil', type:'ally', note:'Trusted on regulatory matters.' },
+
+  { a:'helena', b:'peter', type:'ally', note:'Peter seen as earnest and trustworthy.' },
+
+  { a:'laura', b:'anil', type:'tension', strength:'strong', note:'Regional priority clash — NA vs. APAC.' },
+  { a:'dianne', b:'laura', type:'mixed', bridges:true, note:'Dianne mediates Laura–Anil tensions.' },
+  { a:'dianne', b:'anil', type:'mixed', bridges:true, note:'Dianne mediates Laura–Anil tensions.' }
+];
+
+// ===== LAYOUT =====
+const svg = document.getElementById('mapSvg');
+const W = 900, H = 720;
+const cx = 450, cy = 360, R = 240;
+
+// Order around the circle (grouped strategically: allies clustered, tensions across)
+const order = ['elena','marcus','david','frederic','dianne','anil','laura','helena','peter','rachel','sofia'];
+const positions = {};
+order.forEach((id, i) => {
+  const angle = Math.PI/2 - (i * 2 * Math.PI / order.length);
+  positions[id] = {
+    x: cx + R * Math.cos(angle),
+    y: cy - R * Math.sin(angle),
+    angle
+  };
+});
+
+function colorFor(type) {
+  if (type === 'ally') return '#16a34a';
+  if (type === 'tension') return '#dc2626';
+  return '#d97706';
+}
+
+// ----- DRAW CENTER NODE (Helios Decision) -----
+const centerG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+centerG.classList.add('center-node');
+centerG.innerHTML = `
+  <rect x="${cx-95}" y="${cy-32}" width="190" height="64" rx="8"/>
+  <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="13">HELIOS HOME</text>
+  <text x="${cx}" y="${cy+10}" text-anchor="middle" font-size="11">launch decision</text>
+  <text x="${cx}" y="${cy+24}" text-anchor="middle" font-size="9" fill="#92400e" font-style="italic">the fulcrum everyone is orbiting</text>
+`;
+svg.appendChild(centerG);
+
+// ----- DRAW GOE "UNFILLED" NODE (floating) -----
+const goeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+goeG.classList.add('goe-node');
+goeG.innerHTML = `
+  <rect x="${cx+220}" y="${cy+200}" width="180" height="56" rx="8"/>
+  <text x="${cx+310}" y="${cy+220}" text-anchor="middle" font-size="11">GOE ROLE</text>
+  <text x="${cx+310}" y="${cy+234}" text-anchor="middle" font-size="10">UNFILLED — scope disputed</text>
+  <text x="${cx+310}" y="${cy+248}" text-anchor="middle" font-size="9" font-style="italic">Marcus v. Sofia v. Anil</text>
+`;
+svg.appendChild(goeG);
+
+// ----- DRAW LINKS -----
+const linksG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+svg.appendChild(linksG);
+const linkEls = [];
+
+rels.forEach(r => {
+  const p1 = positions[r.a], p2 = positions[r.b];
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+  line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+  line.setAttribute('stroke', colorFor(r.type));
+  line.setAttribute('stroke-width', r.strength === 'strong' ? 3.2 : 1.8);
+  if (r.bridges) line.setAttribute('stroke-dasharray', '5 3');
+  line.classList.add('link');
+  line.dataset.type = r.type;
+  line.dataset.a = r.a;
+  line.dataset.b = r.b;
+  line.dataset.helios = (r.a === 'sofia' || r.b === 'sofia' || r.a === 'elena' || r.b === 'elena') ? 'true' : 'false';
+  linksG.appendChild(line);
+  linkEls.push(line);
+});
+
+// ----- DRAW NODES -----
+const nodesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+svg.appendChild(nodesG);
+const nodeEls = {};
+
+people.forEach(p => {
+  const pos = positions[p.id];
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.classList.add('node');
+  g.dataset.id = p.id;
+  g.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('r', 28);
+  c.setAttribute('fill', p.styleColor);
+  g.appendChild(c);
+
+  // Position text outside the circle, angled
+  const lblX = (pos.x - cx) * 1.28;
+  const lblY = (pos.y - cy) * 1.28;
+  const anchor = lblX > 30 ? 'start' : (lblX < -30 ? 'end' : 'middle');
+  const dx = lblX > 30 ? 34 : (lblX < -30 ? -34 : 0);
+  const dy = lblY < 0 ? -20 : 42;
+
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', dx);
+  t.setAttribute('y', dy);
+  t.setAttribute('text-anchor', anchor);
+  t.textContent = p.name;
+  g.appendChild(t);
+
+  const t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t2.classList.add('role');
+  t2.setAttribute('x', dx);
+  t2.setAttribute('y', dy + 14);
+  t2.setAttribute('text-anchor', anchor);
+  t2.textContent = p.title;
+  g.appendChild(t2);
+
+  // Initials inside circle
+  const initials = p.name.split(' ').map(w => w[0]).join('');
+  const ti = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  ti.setAttribute('x', 0);
+  ti.setAttribute('y', 5);
+  ti.setAttribute('text-anchor', 'middle');
+  ti.setAttribute('fill', '#fff');
+  ti.setAttribute('font-size', '13');
+  ti.setAttribute('font-weight', '700');
+  ti.textContent = initials;
+  g.appendChild(ti);
+
+  g.addEventListener('click', () => showDetail(p.id));
+  g.addEventListener('mouseenter', () => highlight(p.id));
+  g.addEventListener('mouseleave', () => clearHighlight());
+  nodesG.appendChild(g);
+  nodeEls[p.id] = g;
+});
+
+// ===== INTERACTIONS =====
+function highlight(id) {
+  // dim non-connected
+  const connected = new Set([id]);
+  linkEls.forEach(l => {
+    if (l.dataset.a === id) connected.add(l.dataset.b);
+    if (l.dataset.b === id) connected.add(l.dataset.a);
+  });
+  Object.entries(nodeEls).forEach(([nid, g]) => {
+    g.classList.toggle('dim', !connected.has(nid));
+  });
+  linkEls.forEach(l => {
+    const involved = (l.dataset.a === id || l.dataset.b === id);
+    l.classList.toggle('dim', !involved);
+    l.classList.toggle('highlight', involved);
+  });
+}
+function clearHighlight() {
+  Object.values(nodeEls).forEach(g => g.classList.remove('dim'));
+  linkEls.forEach(l => { l.classList.remove('dim'); l.classList.remove('highlight'); });
+  // Reapply current filter
+  applyFilter();
+}
+
+function showDetail(id) {
+  const p = people.find(x => x.id === id);
+  document.getElementById('dName').textContent = p.name;
+  document.getElementById('dRole').textContent = `${p.title} · ${p.region} · ${p.tenure} tenure`;
+  const tag = document.getElementById('dStyleTag');
+  tag.textContent = p.style;
+  tag.style.background = p.styleColor;
+  document.getElementById('dProfile').textContent = p.profile;
+  document.getElementById('dInfluence').textContent = p.influence;
+
+  // Relationships
+  const rl = document.getElementById('dRels');
+  rl.innerHTML = '';
+  rels.forEach(r => {
+    let other = null;
+    if (r.a === id) other = r.b;
+    else if (r.b === id) other = r.a;
+    if (other) {
+      const op = people.find(x => x.id === other);
+      const li = document.createElement('li');
+      li.className = r.type;
+      const label = r.type === 'ally' ? (r.strength === 'strong' ? 'Strong alliance' : 'Ally')
+                    : r.type === 'tension' ? (r.strength === 'strong' ? 'Strong tension' : 'Tension')
+                    : 'Mixed';
+      li.innerHTML = `<strong>${op.name}</strong> (${op.title}) — <em>${label}</em><br>${r.note}`;
+      rl.appendChild(li);
+    }
+  });
+
+  // Products
+  const wrap = document.getElementById('dProductsWrap');
+  const pdiv = document.getElementById('dProducts');
+  if (p.products && p.products.length) {
+    wrap.style.display = 'block';
+    pdiv.innerHTML = p.products.map(x => '• ' + x).join('<br>');
+  } else {
+    wrap.style.display = 'none';
+  }
+
+  document.getElementById('dBody').style.display = 'block';
+}
+
+// Filters
+let currentFilter = 'all';
+let currentGroup = 'none';
+
+function applyFilter() {
+  linkEls.forEach(l => {
+    let show = true;
+    if (currentFilter === 'ally') show = l.dataset.type === 'ally';
+    else if (currentFilter === 'tension') show = l.dataset.type === 'tension';
+    else if (currentFilter === 'mixed') show = l.dataset.type === 'mixed';
+    else if (currentFilter === 'helios') show = l.dataset.helios === 'true';
+    l.style.display = show ? '' : 'none';
+  });
+}
+
+document.querySelectorAll('.btn[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn[data-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    applyFilter();
+  });
+});
+
+// Group tinting
+function applyGroup() {
+  document.querySelectorAll('.btn[data-group]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.btn[data-group="${currentGroup}"]`).classList.add('active');
+
+  people.forEach(p => {
+    const circle = nodeEls[p.id].querySelector('circle');
+    if (currentGroup === 'none') {
+      circle.setAttribute('fill', p.styleColor);
+    } else if (currentGroup === 'function') {
+      const fmap = { Executive:'#1e3a8a', Operations:'#0e7490', Commercial:'#c2410c', Finance:'#334155', Technology:'#7e22ce', Legal:'#a16207', HR:'#be185d', 'Investor/Gov':'#4338ca', Regional:'#166534' };
+      circle.setAttribute('fill', fmap[p.function] || '#64748b');
+    } else if (currentGroup === 'region') {
+      const rmap = { Global:'#334155', 'North America':'#dc2626', APAC:'#16a34a', EMEA:'#2563eb' };
+      circle.setAttribute('fill', rmap[p.region] || '#64748b');
+    }
+  });
+}
+
+document.querySelectorAll('.btn[data-group]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentGroup = btn.dataset.group;
+    applyGroup();
+  });
+});
+
+// Start with Elena selected
+showDetail('elena');
+</script>
+</body>
+</html>
